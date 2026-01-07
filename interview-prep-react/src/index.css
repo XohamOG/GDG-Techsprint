@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Whiteboard theme colors */
+  --bg-white: #FAFAFA;
+  --bg-grid: #F5F5F5;
+  --text-dark: #1A1A1A;
+  --text-gray: #666;
+  --accent-blue: #3B82F6;
+  --accent-green: #10B981;
+  --accent-yellow: #FBBF24;
+  --accent-red: #EF4444;
+  --accent-purple: #8B5CF6;
+}
+
+@layer base {
+  * {
+    @apply border-gray-300;
+  }
+  
+  body {
+    @apply bg-[#FAFAFA] text-[#1A1A1A] font-comic;
+    overflow-x: hidden;
+  }
+
+  /* Whiteboard grid background */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(0deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@layer components {
+  /* Hand-drawn button styles */
+  .btn-sketch {
+    @apply relative px-8 py-4 font-bold text-lg transition-all duration-300;
+    @apply border-4 border-black rounded-lg;
+    @apply hover:translate-x-1 hover:-translate-y-1;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 1);
+  }
+
+  .btn-sketch:hover {
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 1);
+  }
+
+  .btn-sketch:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 1);
+  }
+
+  /* Card with hand-drawn effect */
+  .card-sketch {
+    @apply relative p-8 bg-white border-4 border-black rounded-2xl;
+    @apply transition-all duration-300;
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-sketch:hover {
+    box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  /* Doodle decorations */
+  .doodle-circle {
+    @apply absolute rounded-full border-2 border-dashed border-gray-400;
+  }
+
+  .doodle-line {
+    @apply absolute h-0.5 bg-gray-300 transform;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-left: 2px solid #ddd;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+  border: 2px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Selection styling */
+::selection {
+  background-color: #FBBF24;
+  color: #1A1A1A;
+}
+
+/* Smooth animations */
+* {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
