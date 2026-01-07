@@ -6,6 +6,12 @@ import Practice from './pages/Practice'
 import Interviews from './pages/Interviews'
 import Companies from './pages/Companies'
 import Stats from './pages/Stats'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import Profile from './pages/Profile'
+import InterviewSetup from './pages/InterviewSetup'
+import InterviewScreen from './pages/InterviewScreen'
+import InterviewResults from './pages/InterviewResults'
 
 function App() {
   const [showSplash, setShowSplash] = useState(true)
@@ -31,6 +37,12 @@ function App() {
           <Route path="/interviews/*" element={<Interviews />} />
           <Route path="/companies" element={<Companies />} />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/interview-setup" element={<InterviewSetup />} />
+          <Route path="/interview" element={<InterviewScreen />} />
+          <Route path="/interview-results" element={<InterviewResults />} />
         </Routes>
       </div>
     </Router>

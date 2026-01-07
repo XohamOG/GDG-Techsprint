@@ -30,17 +30,18 @@ export default function Navbar() {
             <NavLink to="/interviews">Interviews</NavLink>
             <NavLink to="/companies">Companies</NavLink>
             <NavLink to="/stats">Stats</NavLink>
+            <NavLink to="/profile">Profile</NavLink>
           </div>
 
           {/* CTA Button */}
           <div className="hidden md:block">
-            <Link to="/practice">
+            <Link to={localStorage.getItem('user') ? "/interview-setup" : "/login"}>
               <motion.button
                 className="btn-sketch bg-black text-white hover:bg-gray-800"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Start Now
+                {localStorage.getItem('user') ? 'Start Interview' : 'Login'}
               </motion.button>
             </Link>
           </div>
@@ -79,9 +80,12 @@ export default function Navbar() {
               <MobileNavLink to="/stats" onClick={() => setIsOpen(false)}>
                 Stats
               </MobileNavLink>
-              <Link to="/practice" onClick={() => setIsOpen(false)}>
+              <MobileNavLink to="/profile" onClick={() => setIsOpen(false)}>
+                Profile
+              </MobileNavLink>
+              <Link to={localStorage.getItem('user') ? "/interview-setup" : "/login"} onClick={() => setIsOpen(false)}>
                 <button className="w-full btn-sketch bg-black text-white hover:bg-gray-800 text-center">
-                  Start Now
+                  {localStorage.getItem('user') ? 'Start Interview' : 'Login'}
                 </button>
               </Link>
             </div>
