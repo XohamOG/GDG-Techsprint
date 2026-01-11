@@ -58,6 +58,10 @@ class ResumeData(models.Model):
     # Languages
     languages = models.JSONField(default=list, blank=True)
     
+    # Additional AI-extracted fields
+    years_of_experience = models.IntegerField(default=0, blank=True, null=True)
+    key_strengths = models.JSONField(default=list, blank=True)
+    
     # Raw text from resume
     raw_text = models.TextField(blank=True, null=True)
     

@@ -2,6 +2,7 @@ import re
 import PyPDF2
 import docx
 from io import BytesIO
+from .gemini_analyzer import extract_name_from_resume, extract_all_resume_data
 
 
 def extract_text_from_pdf(file):
@@ -135,7 +136,7 @@ def extract_experience(text):
 
 def parse_resume(file, file_name):
     """
-    Main function to parse resume and extract all information
+    Main function to parse resume and extract all information using AI
     """
     # Extract text based on file type
     if file_name.lower().endswith('.pdf'):
@@ -145,17 +146,75 @@ def parse_resume(file, file_name):
     else:
         raw_text = ""
     
-    # Extract information
+    if not raw_text:
+        return {
+            'full_name': None,
+            'email': None,
+            'phone': None,
+            'raw_text': '',
+            'file_name': file_name
+        }
+    
+    # Extract email first (needed for AI extraction)
     email = extract_email(raw_text)
+    
+    # Try AI-powered extraction first (extracts everything in one go)
+    ai_data = extract_all_resume_data(raw_text, email)
+    
+    if ai_data:
+        # AI extraction successful - use all AI data
+        print("✅ Using AI-extracted data for all fields")
+        return {
+            'full_name': ai_data.get('full_name'),
+            'email': ai_data.get('email') or email,
+            'phone': ai_data.get('phone'),
+            'location': ai_data.get('location'),
+            'linkedin': ai_data.get('linkedin'),
+            'github': ai_data.get('github'),
+            'website': ai_data.get('website'),
+            'summary': ai_data.get('summary'),
+            'years_of_experience': ai_data.get('years_of_experience', 0),
+            'skills': ai_data.get('skills', []),
+            'education': ai_data.get('education', []),
+            'experience': ai_data.get('experience', []),
+            'projects': ai_data.get('projects', []),
+            'certifications': ai_data.get('certifications', []),
+            'languages': ai_data.get('languages', []),
+            'key_strengths': ai_data.get('key_strengths', []),
+            'raw_text': raw_text,
+            'file_name': file_name
+        }
+    
+    # Fallback: AI extraction failed, use regex-based extraction
+    print("⚠️ AI extraction failed, using regex fallback")
     phone = extract_phone(raw_text)
     linkedin, github, website = extract_links(raw_text)
     skills = extract_skills(raw_text)
     education = extract_education(raw_text)
     experience = extract_experience(raw_text)
     
-    # Extract name (usually first line or first few words)
-    lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
-    name = lines[0] if lines else None
+    # Extract name with priority: email-based > AI > pattern matching
+    name = None
+    if email:
+        email_name = email.split('@')[0]
+        email_name = re.sub(r'^\d{4}\.', '', email_name)
+        name_parts = re.split(r'[._-]', email_name)
+        name_parts = [part for part in name_parts if part.isalpha() and len(part) > 1]
+        if name_parts:
+            name = ' '.join(part.capitalize() for part in name_parts)
+    
+    if not name:
+        lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
+        for line in lines[:15]:
+            if any(keyword in line.lower() for keyword in ['resume', 'curriculum vitae', 'cv', 'profile', 'objective', 'summary', 'experience', 'education', 'skills', 'projects', 'contact', 'email', 'phone', '@', 'http', 'linkedin', 'github']):
+                continue
+            if re.search(r'[\d+\-\/\|]', line):
+                continue
+            words = line.split()
+            if 2 <= len(words) <= 4:
+                if all(word[0].isupper() and word.replace('-', '').replace("'", '').isalpha() for word in words):
+                    name = line
+                    break
     
     return {
         'full_name': name,
@@ -167,6 +226,13 @@ def parse_resume(file, file_name):
         'skills': skills,
         'education': education,
         'experience': experience,
+        'projects': [],
+        'certifications': [],
+        'languages': [],
+        'location': None,
+        'summary': None,
+        'years_of_experience': 0,
+        'key_strengths': [],
         'raw_text': raw_text,
         'file_name': file_name
     }

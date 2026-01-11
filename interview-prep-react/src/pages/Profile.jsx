@@ -198,6 +198,53 @@ export default function Profile() {
                     </div>
                   </div>
                 )}
+
+                {/* Projects */}
+                {resumeData.projects && resumeData.projects.length > 0 && (
+                  <div className="card-sketch mb-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Code className="w-6 h-6 text-black" />
+                      <h3 className="text-2xl font-hand font-bold text-gray-900">Projects</h3>
+                    </div>
+                    <div className="space-y-4">
+                      {resumeData.projects.map((project, idx) => (
+                        <div key={idx} className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                          <h4 className="font-bold text-gray-900">{project.name}</h4>
+                          {project.description && <p className="text-sm text-gray-700 font-comic mt-2">{project.description}</p>}
+                          {project.technologies && project.technologies.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              {project.technologies.map((tech, techIdx) => (
+                                <span key={techIdx} className="px-2 py-1 bg-white border border-black rounded text-xs font-bold">
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Certifications */}
+                {resumeData.certifications && resumeData.certifications.length > 0 && (
+                  <div className="card-sketch mb-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Award className="w-6 h-6 text-black" />
+                      <h3 className="text-2xl font-hand font-bold text-gray-900">Certifications</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeData.certifications.map((cert, idx) => (
+                        <span
+                          key={idx}
+                          className="px-4 py-2 bg-white border-2 border-black rounded-lg text-sm font-bold"
+                        >
+                          {cert}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -226,28 +273,19 @@ export default function Profile() {
                 Recent Interviews
               </h3>
               
-              <div className="space-y-3">
-                {[
-                  { type: 'Technical', company: 'Google', score: '85%', date: '2 days ago' },
-                  { type: 'Behavioral', company: 'Meta', score: '92%', date: '5 days ago' },
-                  { type: 'System Design', company: 'Amazon', score: '78%', date: '1 week ago' },
-                ].map((interview, idx) => (
-                  <motion.div
-                    key={idx}
-                    className="p-4 bg-gray-50 rounded-xl border-2 border-gray-300 hover:border-black transition-all cursor-pointer"
-                    whileHover={{ x: 5 }}
+              <div className="text-center py-8">
+                <p className="text-gray-500 font-comic">
+                  No interview history yet. Start practicing to see your progress!
+                </p>
+                <Link to="/interview-setup">
+                  <motion.button
+                    className="btn-sketch bg-black text-white px-6 py-3 mt-4"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-bold text-gray-900">{interview.type} - {interview.company}</p>
-                        <p className="text-sm text-gray-600 font-bold">{interview.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-hand font-bold text-gray-900">{interview.score}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    Start Interview
+                  </motion.button>
+                </Link>
               </div>
             </div>
           </motion.div>

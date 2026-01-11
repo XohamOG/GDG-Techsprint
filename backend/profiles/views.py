@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import UserProfile, ResumeData
 from .serializers import UserProfileSerializer, ResumeDataSerializer
 from .resume_parser import parse_resume
+from .gemini_analyzer import get_interview_recommendations
 import json
 
 
@@ -100,6 +101,11 @@ def upload_resume(request):
         # We don't store the file, just the extracted information!
         parsed_data = parse_resume(uploaded_file, uploaded_file.name)
         
+        # Debug: Print parsed name
+        print(f"Parsed name: {parsed_data.get('full_name')}")
+        print(f"Parsed email: {parsed_data.get('email')}")
+        print(f"Skills count: {len(parsed_data.get('skills', []))}")
+        
         # Update or create resume data in SQLite
         resume_data, created = ResumeData.objects.update_or_create(
             user=user,
@@ -149,3 +155,60 @@ def get_resume(request):
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_recommendations(request):
+    """Get AI-powered interview recommendations based on resume data"""
+    try:
+        uid = request.GET.get('uid') or request.headers.get('X-User-UID')
+        
+        if not uid:
+            return Response({
+                'error': 'UID is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = UserProfile.objects.get(uid=uid)
+            resume_data = ResumeData.objects.get(user=user)
+            
+            # Convert resume data to dict for analysis
+            resume_dict = {
+                'full_name': resume_data.full_name,
+                'email': resume_data.email,
+                'skills': resume_data.skills,
+                'experience': resume_data.experience,
+                'education': resume_data.education,
+                'projects': resume_data.projects,
+                'certifications': resume_data.certifications,
+                'years_of_experience': resume_data.years_of_experience,
+                'key_strengths': resume_data.key_strengths,
+            }
+            
+            # Get AI recommendations
+            recommendations = get_interview_recommendations(resume_dict)
+            
+            return Response({
+                'recommendations': recommendations,
+                'resume_summary': {
+                    'name': resume_data.full_name,
+                    'years_experience': resume_data.years_of_experience,
+                    'skills_count': len(resume_data.skills),
+                    'projects_count': len(resume_data.projects),
+                    'key_strengths': resume_data.key_strengths
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except UserProfile.DoesNotExist:
+            return Response({
+                'error': 'User profile not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except ResumeData.DoesNotExist:
+            return Response({
+                'error': 'Resume not found. Please upload your resume first.'
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

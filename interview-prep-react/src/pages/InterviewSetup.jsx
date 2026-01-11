@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Target, TrendingUp, Code, Rocket } from 'lucide-react'
+import { Target, TrendingUp, Code, Rocket, Sparkles, Loader } from 'lucide-react'
 import Navbar from '../components/Navbar'
+import axios from 'axios'
+import { auth } from '../firebase/config'
 
 export default function InterviewSetup() {
   const navigate = useNavigate()
@@ -13,7 +15,73 @@ export default function InterviewSetup() {
     domain: '',
     companyStyle: 'General'
   })
+  const [recommendations, setRecommendations] = useState(null)
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false)
+  const [showRecommendations, setShowRecommendations] = useState(false)
 
+  // Fetch AI recommendations when component mounts
+  useEffect(() => {
+    fetchRecommendations()
+  }, [])
+
+  const fetchRecommendations = async () => {
+    try {
+      setLoadingRecommendations(true)
+      const user = auth.currentUser
+      
+      if (!user) {
+        console.log('No user logged in')
+        return
+      }
+
+      const response = await axios.get(`http://localhost:8000/api/recommendations/`, {
+        params: { uid: user.uid }
+      })
+
+      setRecommendations(response.data.recommendations)
+      setShowRecommendations(true)
+    } catch (error) {
+      console.error('Error fetching recommendations:', error)
+      // Don't show error to user, just skip recommendations
+    } finally {
+      setLoadingRecommendations(false)
+    }
+  }
+
+  const applyRecommendations = () => {
+    if (recommendations) {
+      setConfig({
+        ...config,
+        goal: mapGoalToId(recommendations.goal),
+        level: mapLevelToId(recommendations.target_level),
+        domain: mapDomainToId(recommendations.domain)
+      })
+      setShowRecommendations(false)
+    }
+  }
+
+  // Helper functions to map AI responses to our IDs
+  const mapGoalToId = (goalText) => {
+    if (goalText?.includes('Full')) return 'full'
+    if (goalText?.includes('Focused')) return 'focused'
+    if (goalText?.includes('Quick')) return 'quick'
+    return 'focused'
+  }
+
+  const mapLevelToId = (levelText) => {
+    if (levelText?.includes('Entry')) return 'entry'
+    if (levelText?.includes('Mid')) return 'mid'
+    if (levelText?.includes('Senior')) return 'mid'
+    return 'entry'
+  }
+
+  const mapDomainToId = (domainText) => {
+    const text = domainText?.toLowerCase() || ''
+    if (text.includes('data structures') || text.includes('algorithm')) return 'dsa'
+    if (text.includes('web') || text.includes('backend') || text.includes('full')) return 'web'
+    if (text.includes('machine') || text.includes('data')) return 'ml'
+    return 'core'
+  }
 
   const goals = [
     { 
@@ -110,6 +178,50 @@ export default function InterviewSetup() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -30 }}
           >
+            {/* AI Recommendations Banner */}
+            {showRecommendations && recommendations && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-sketch mb-6 bg-gradient-to-r from-purple-50 to-blue-50"
+              >
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-6 h-6 text-purple-600 mt-1 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-xl font-hand font-bold text-gray-900 mb-2">
+                      AI Recommendations Based on Your Resume
+                    </h3>
+                    <div className="grid gap-2 text-sm mb-4">
+                      <p><strong>Suggested Goal:</strong> {recommendations.goal}</p>
+                      <p><strong>Recommended Level:</strong> {recommendations.target_level}</p>
+                      <p><strong>Best Domain:</strong> {recommendations.domain}</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={applyRecommendations}
+                        className="btn-sketch bg-purple-600 text-white px-6 py-2 text-sm"
+                      >
+                        Apply Recommendations
+                      </button>
+                      <button
+                        onClick={() => setShowRecommendations(false)}
+                        className="btn-sketch bg-white text-black px-6 py-2 text-sm"
+                      >
+                        Choose Manually
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {loadingRecommendations && (
+              <div className="card-sketch mb-6 text-center py-6">
+                <Loader className="w-6 h-6 animate-spin mx-auto mb-2" />
+                <p className="text-gray-600">Analyzing your resume...</p>
+              </div>
+            )}
+
             <div className="card-sketch">
               <div className="flex items-center gap-3 mb-6">
                 <Target className="w-8 h-8 text-black" />
