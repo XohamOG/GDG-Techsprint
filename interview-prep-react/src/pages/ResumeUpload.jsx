@@ -1,8 +1,11 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Upload, FileText, CheckCircle, AlertCircle, Loader } from 'lucide-react'
+import axios from 'axios'
 import Navbar from '../components/Navbar'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 export default function ResumeUpload() {
   const navigate = useNavigate()
@@ -10,7 +13,18 @@ export default function ResumeUpload() {
   const [file, setFile] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user')
+    if (!userData) {
+      navigate('/login')
+    } else {
+      setUser(JSON.parse(userData))
+    }
+  }, [navigate])
 
   const handleFileSelect = (selectedFile) => {
     setError('')
@@ -52,29 +66,52 @@ export default function ResumeUpload() {
       return
     }
 
+    if (!user || !user.uid) {
+      setError('User not authenticated')
+      navigate('/login')
+      return
+    }
+
     setIsAnalyzing(true)
+    setError('')
+    setUploadProgress(10)
     
-    // Simulate resume analysis
-    setTimeout(() => {
-      // Mock extracted data
-      const resumeData = {
-        fileName: file.name,
-        uploadedAt: new Date().toISOString(),
-        parsedData: {
-          name: 'John Doe', // Would be extracted from PDF
-          experience: '2 years',
-          domain: 'Software Engineering',
-          skills: ['JavaScript', 'React', 'Node.js', 'Python'],
-          education: 'BS Computer Science'
+    try {
+      // Send file directly to Django backend for parsing
+      // No cloud storage needed - we just extract and save the data!
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('uid', user.uid)
+      
+      setUploadProgress(30)
+      
+      const response = await axios.post(`${API_URL}/resume/upload/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-User-UID': user.uid
+        },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round((progressEvent.loaded * 70) / progressEvent.total) + 30
+          setUploadProgress(progress)
         }
-      }
+      })
       
-      // Save to localStorage
-      localStorage.setItem('resumeData', JSON.stringify(resumeData))
+      setUploadProgress(100)
       
-      // Navigate to profile summary
-      navigate('/profile-summary')
-    }, 3000) // 3 second analysis simulation
+      // Save parsed resume data to localStorage
+      localStorage.setItem('resumeData', JSON.stringify(response.data.resume))
+      
+      // Navigate to profile
+      setTimeout(() => {
+        navigate('/profile')
+      }, 500)
+      
+    } catch (error) {
+      console.error('Upload error:', error)
+      setError(error.response?.data?.error || 'Failed to analyze resume. Please try again.')
+      setIsAnalyzing(false)
+      setUploadProgress(0)
+    }
   }
 
   return (
@@ -187,12 +224,19 @@ export default function ResumeUpload() {
 
               <motion.button
                 onClick={handleUpload}
-                disabled={!file}
-                className="w-full btn-sketch bg-black text-white py-4 text-xl mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: file ? 1.02 : 1 }}
-                whileTap={{ scale: file ? 0.98 : 1 }}
+                disabled={!file || isAnalyzing}
+                className="w-full btn-sketch bg-black text-white py-4 text-xl mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                whileHover={{ scale: file && !isAnalyzing ? 1.02 : 1 }}
+                whileTap={{ scale: file && !isAnalyzing ? 0.98 : 1 }}
               >
-                Continue to Profile
+                {isAnalyzing ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    Uploading & Analyzing...
+                  </>
+                ) : (
+                  'Upload & Analyze Resume'
+                )}
               </motion.button>
             </>
           ) : (
@@ -206,19 +250,42 @@ export default function ResumeUpload() {
                 Analyzing Resume...
               </h3>
               <p className="text-lg text-gray-600 font-comic mb-6">
-                Extracting your experience, skills, and qualifications
+                Uploading to secure storage and extracting your information
               </p>
+              
+              {/* Progress Bar */}
+              <div className="w-full max-w-md mx-auto mb-6">
+                <div className="w-full bg-gray-200 rounded-full h-4 border-2 border-black">
+                  <div
+                    className="bg-black h-full rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-sm text-gray-600 font-comic mt-2">{uploadProgress}% Complete</p>
+              </div>
+              
               <div className="space-y-2">
-                {['Reading document...', 'Extracting skills...', 'Analyzing experience...', 'Creating profile...'].map((text, idx) => (
+                {[
+                  { text: 'Uploading resume...', threshold: 30 },
+                  { text: 'Extracting text from PDF...', threshold: 50 },
+                  { text: 'Analyzing skills and experience...', threshold: 70 },
+                  { text: 'Saving to database...', threshold: 90 }
+                ].map((item, idx) => (
                   <motion.div
                     key={idx}
                     initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.7 }}
+                    animate={{ opacity: uploadProgress >= item.threshold ? 1 : 0.3, x: 0 }}
+                    transition={{ duration: 0.3 }}
                     className="flex items-center justify-center gap-2"
                   >
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="text-gray-700 font-comic">{text}</span>
+                    {uploadProgress >= item.threshold ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <div className="w-5 h-5 border-2 border-gray-300 rounded-full" />
+                    )}
+                    <span className={`font-comic ${uploadProgress >= item.threshold ? 'text-gray-900' : 'text-gray-400'}`}>
+                      {item.text}
+                    </span>
                   </motion.div>
                 ))}
               </div>
@@ -231,8 +298,8 @@ export default function ResumeUpload() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { icon: '🎯', title: 'Tailored Questions', desc: 'Based on your experience' },
-              { icon: '🤖', title: 'AI-Powered', desc: 'Smart interview simulation' },
-              { icon: '🔒', title: 'Private & Secure', desc: 'Data stays on your device' }
+              { icon: '🤖', title: 'Smart Analysis', desc: 'Automatic data extraction' },
+              { icon: '🔒', title: 'Private & Secure', desc: 'Stored only in database' }
             ].map((item, idx) => (
               <motion.div
                 key={idx}

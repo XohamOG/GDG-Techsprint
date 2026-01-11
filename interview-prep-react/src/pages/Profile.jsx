@@ -1,25 +1,59 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { User, Mail, Award, Calendar, LogOut, Pencil } from 'lucide-react'
+import { User, Mail, Award, Calendar, LogOut, Pencil, FileText, Briefcase, GraduationCap, Code, Upload } from 'lucide-react'
+import { signOut } from 'firebase/auth'
+import { auth } from '../firebase/config'
+import axios from 'axios'
 import Navbar from '../components/Navbar'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 export default function Profile() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [resumeData, setResumeData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
     if (!userData) {
       navigate('/login')
     } else {
-      setUser(JSON.parse(userData))
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
+      fetchResumeData(parsedUser.uid)
     }
   }, [navigate])
 
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    navigate('/login')
+  const fetchResumeData = async (uid) => {
+    try {
+      const response = await axios.get(`${API_URL}/resume/`, {
+        params: { uid },
+        headers: {
+          'X-User-UID': uid
+        }
+      })
+      setResumeData(response.data)
+      localStorage.setItem('resumeData', JSON.stringify(response.data))
+    } catch (error) {
+      console.log('No resume data found:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth)
+      localStorage.removeItem('user')
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('userProfile')
+      localStorage.removeItem('resumeData')
+      navigate('/login')
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   if (!user) return null
@@ -57,30 +91,134 @@ export default function Profile() {
                     <User className="w-10 h-10 text-black" strokeWidth={2.5} />
                   </div>
                   <div>
-                    <h2 className="text-3xl font-hand font-bold text-gray-900">{user.name}</h2>
-                    <p className="text-gray-600 font-bold">{user.email}</p>
+                    <h2 className="text-3xl font-hand font-bold text-gray-900">
+                      {resumeData?.full_name || user.displayName || user.email?.split('@')[0]}
+                    </h2>
+                    <p className="text-gray-600 font-bold flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      {resumeData?.email || user.email}
+                    </p>
+                    {resumeData?.phone && (
+                      <p className="text-gray-600 font-bold mt-1">📱 {resumeData.phone}</p>
+                    )}
                   </div>
                 </div>
-                <motion.button
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <Pencil className="w-5 h-5 text-gray-700" />
-                </motion.button>
+                <Link to="/resume-upload">
+                  <motion.button
+                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    title="Update Resume"
+                  >
+                    <Upload className="w-5 h-5 text-gray-700" />
+                  </motion.button>
+                </Link>
               </div>
+
+              {resumeData?.summary && (
+                <div className="mb-6 p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                  <h3 className="text-sm font-bold text-gray-700 mb-2">Professional Summary</h3>
+                  <p className="text-gray-800 font-comic">{resumeData.summary}</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4 pt-6 border-t-2 border-dashed border-gray-300">
                 <div>
-                  <p className="text-sm text-gray-600 font-bold mb-1">Member Since</p>
-                  <p className="text-lg font-bold text-gray-900">January 2026</p>
+                  <p className="text-sm text-gray-600 font-bold mb-1">Joined</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-bold mb-1">Interviews Completed</p>
-                  <p className="text-lg font-bold text-gray-900">12</p>
+                  <p className="text-sm text-gray-600 font-bold mb-1">Resume Status</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {resumeData ? '✅ Uploaded' : '⏳ Pending'}
+                  </p>
                 </div>
               </div>
             </div>
+
+            {/* Resume Information */}
+            {resumeData && (
+              <>
+                {/* Skills */}
+                {resumeData.skills && resumeData.skills.length > 0 && (
+                  <div className="card-sketch mb-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Code className="w-6 h-6 text-black" />
+                      <h3 className="text-2xl font-hand font-bold text-gray-900">Skills</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeData.skills.map((skill, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 bg-white border-2 border-black rounded-full text-sm font-bold"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Experience */}
+                {resumeData.experience && resumeData.experience.length > 0 && (
+                  <div className="card-sketch mb-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Briefcase className="w-6 h-6 text-black" />
+                      <h3 className="text-2xl font-hand font-bold text-gray-900">Experience</h3>
+                    </div>
+                    <div className="space-y-4">
+                      {resumeData.experience.map((exp, idx) => (
+                        <div key={idx} className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                          <h4 className="font-bold text-gray-900">{exp.title}</h4>
+                          {exp.company && <p className="text-sm text-gray-600 font-bold">{exp.company}</p>}
+                          {exp.description && <p className="text-sm text-gray-700 font-comic mt-2">{exp.description}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Education */}
+                {resumeData.education && resumeData.education.length > 0 && (
+                  <div className="card-sketch mb-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <GraduationCap className="w-6 h-6 text-black" />
+                      <h3 className="text-2xl font-hand font-bold text-gray-900">Education</h3>
+                    </div>
+                    <div className="space-y-4">
+                      {resumeData.education.map((edu, idx) => (
+                        <div key={idx} className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                          <h4 className="font-bold text-gray-900">{edu.degree}</h4>
+                          {edu.institution && <p className="text-sm text-gray-600 font-bold">{edu.institution}</p>}
+                          {edu.year && <p className="text-sm text-gray-600">{edu.year}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {!resumeData && !loading && (
+              <div className="card-sketch mb-6 text-center py-12">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-2xl font-hand font-bold text-gray-900 mb-2">No Resume Uploaded</h3>
+                <p className="text-gray-600 font-comic mb-6">
+                  Upload your resume to unlock personalized interview preparation
+                </p>
+                <Link to="/resume-upload">
+                  <motion.button
+                    className="btn-sketch bg-black text-white px-6 py-3"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Upload Resume
+                  </motion.button>
+                </Link>
+              </div>
+            )}
 
             {/* Recent Activity */}
             <div className="card-sketch">
