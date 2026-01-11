@@ -18,6 +18,7 @@ export default function InterviewSetup() {
   const [recommendations, setRecommendations] = useState(null)
   const [loadingRecommendations, setLoadingRecommendations] = useState(false)
   const [showRecommendations, setShowRecommendations] = useState(false)
+  const [generatingQuestions, setGeneratingQuestions] = useState(false)
 
   // Fetch AI recommendations when component mounts
   useEffect(() => {
@@ -126,19 +127,46 @@ export default function InterviewSetup() {
     { id: 'Startup', name: 'Startup', desc: 'Practical skills and quick decision-making' }
   ]
 
-  const handleStart = () => {
-    const profileData = localStorage.getItem('profileData')
-    const interviewRole = localStorage.getItem('interviewRole')
-    
-    const interviewConfig = {
-      ...config,
-      profileData: profileData ? JSON.parse(profileData) : null,
-      interviewRole: interviewRole || 'Software Engineer',
-      createdAt: new Date().toISOString()
+  const handleStart = async () => {
+    if (!config.goal || !config.level || !config.domain) {
+      alert('Please complete all steps before starting the interview')
+      return
     }
+
+    setGeneratingQuestions(true)
     
-    localStorage.setItem('interviewConfig', JSON.stringify(interviewConfig))
-    navigate('/interview')
+    try {
+      const user = auth.currentUser
+      if (!user) {
+        alert('Please log in to start the interview')
+        navigate('/login')
+        return
+      }
+
+      // Generate questions using AI
+      const response = await axios.post(`http://localhost:8000/api/questions/generate/`, {
+        uid: user.uid,
+        goal: config.goal,
+        level: config.level,
+        domain: config.domain
+      })
+
+      const interviewConfig = {
+        ...config,
+        questions: response.data.questions,
+        total_questions: response.data.total,
+        createdAt: new Date().toISOString()
+      }
+      
+      localStorage.setItem('interviewConfig', JSON.stringify(interviewConfig))
+      navigate('/interview')
+      
+    } catch (error) {
+      console.error('Error generating questions:', error)
+      alert('Failed to generate questions. Please try again.')
+    } finally {
+      setGeneratingQuestions(false)
+    }
   }
 
   return (
@@ -438,12 +466,22 @@ export default function InterviewSetup() {
                 </motion.button>
                 <motion.button
                   onClick={handleStart}
-                  className="flex-1 btn-sketch bg-black text-white py-4 text-xl flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  disabled={generatingQuestions}
+                  className="flex-1 btn-sketch bg-black text-white py-4 text-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={{ scale: generatingQuestions ? 1 : 1.02 }}
+                  whileTap={{ scale: generatingQuestions ? 1 : 0.98 }}
                 >
-                  <Rocket className="w-6 h-6" />
-                  Start Interview!
+                  {generatingQuestions ? (
+                    <>
+                      <Loader className="w-6 h-6 animate-spin" />
+                      Generating Questions...
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="w-6 h-6" />
+                      Start Interview!
+                    </>
+                  )}
                 </motion.button>
               </div>
             </div>

@@ -16,6 +16,8 @@ export default function ResumeUpload() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState('')
   const [user, setUser] = useState(null)
+  const [showRecommendations, setShowRecommendations] = useState(false)
+  const [recommendations, setRecommendations] = useState(null)
 
   useEffect(() => {
     const userData = localStorage.getItem('user')
@@ -101,10 +103,20 @@ export default function ResumeUpload() {
       // Save parsed resume data to localStorage
       localStorage.setItem('resumeData', JSON.stringify(response.data.resume))
       
-      // Navigate to profile
-      setTimeout(() => {
-        navigate('/profile')
-      }, 500)
+      // Fetch AI recommendations
+      try {
+        const recsResponse = await axios.get(`${API_URL}/recommendations/`, {
+          params: { uid: user.uid }
+        })
+        setRecommendations(recsResponse.data.recommendations)
+        setShowRecommendations(true)
+      } catch (err) {
+        console.log('Could not fetch recommendations:', err)
+        // Still navigate to profile even if recommendations fail
+        setTimeout(() => {
+          navigate('/profile')
+        }, 500)
+      }
       
     } catch (error) {
       console.error('Upload error:', error)
@@ -315,7 +327,67 @@ export default function ResumeUpload() {
             ))}
           </div>
         )}
-      </div>
+        {/* Recommendations Modal */}
+        {showRecommendations && recommendations && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl border-4 border-black max-w-lg w-full p-8"
+            >
+              <div className="text-center mb-6">
+                <div className="text-6xl mb-4">🎯</div>
+                <h2 className="text-3xl font-hand font-bold text-gray-900 mb-2">
+                  Resume Analyzed!
+                </h2>
+                <p className="text-gray-600 font-comic">
+                  Here's what we recommend based on your profile:
+                </p>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
+                  <p className="text-sm font-bold text-purple-700 mb-1">Recommended Goal</p>
+                  <p className="text-lg font-hand font-bold text-gray-900">{recommendations.goal}</p>
+                  <p className="text-sm text-gray-600 font-comic mt-1">{recommendations.reasoning?.goal_reason}</p>
+                </div>
+
+                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                  <p className="text-sm font-bold text-blue-700 mb-1">Target Level</p>
+                  <p className="text-lg font-hand font-bold text-gray-900">{recommendations.target_level}</p>
+                  <p className="text-sm text-gray-600 font-comic mt-1">{recommendations.reasoning?.level_reason}</p>
+                </div>
+
+                <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                  <p className="text-sm font-bold text-green-700 mb-1">Primary Domain</p>
+                  <p className="text-lg font-hand font-bold text-gray-900">{recommendations.domain}</p>
+                  <p className="text-sm text-gray-600 font-comic mt-1">{recommendations.reasoning?.domain_reason}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowRecommendations(false)
+                    navigate('/interview-setup')
+                  }}
+                  className="flex-1 btn-sketch bg-black text-white py-3 font-bold"
+                >
+                  Start Interview Setup
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRecommendations(false)
+                    navigate('/profile')
+                  }}
+                  className="flex-1 btn-sketch bg-white text-black py-3 font-bold"
+                >
+                  View Profile
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}      </div>
     </div>
   )
 }

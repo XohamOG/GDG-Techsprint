@@ -7,6 +7,7 @@ from .models import UserProfile, ResumeData
 from .serializers import UserProfileSerializer, ResumeDataSerializer
 from .resume_parser import parse_resume
 from .gemini_analyzer import get_interview_recommendations
+from .question_generator import generate_interview_questions
 import json
 
 
@@ -209,6 +210,60 @@ def get_recommendations(request):
             }, status=status.HTTP_404_NOT_FOUND)
             
     except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def generate_questions(request):
+    """Generate interview questions based on configuration and resume"""
+    try:
+        data = request.data
+        uid = data.get('uid')
+        goal = data.get('goal')  # full, focused, quick
+        target_level = data.get('level')  # entry, mid, etc.
+        domain = data.get('domain')  # dsa, web, ml, core
+        
+        if not all([uid, goal, target_level, domain]):
+            return Response({
+                'error': 'Missing required parameters (uid, goal, level, domain)'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get user's resume data for personalization
+        resume_dict = None
+        try:
+            user = UserProfile.objects.get(uid=uid)
+            resume_data = ResumeData.objects.get(user=user)
+            
+            resume_dict = {
+                'full_name': resume_data.full_name,
+                'years_of_experience': resume_data.years_of_experience,
+                'skills': resume_data.skills,
+                'key_strengths': resume_data.key_strengths,
+                'projects': resume_data.projects,
+            }
+        except (UserProfile.DoesNotExist, ResumeData.DoesNotExist):
+            print("No resume data found, generating generic questions")
+        
+        # Generate questions using AI
+        questions = generate_interview_questions(goal, target_level, domain, resume_dict)
+        
+        return Response({
+            'questions': questions,
+            'total': len(questions),
+            'config': {
+                'goal': goal,
+                'level': target_level,
+                'domain': domain
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(f"Error generating questions: {e}")
+        import traceback
+        traceback.print_exc()
         return Response({
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
