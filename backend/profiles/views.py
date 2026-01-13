@@ -341,40 +341,42 @@ def analyze_interview(request):
                 'error': analysis_result['error']
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # Extract analysis components
-        personal_report = analysis_result.get('personal_report', {})
-        integrity_analysis = analysis_result.get('integrity_analysis', {})
-        ranking = analysis_result.get('ranking', {})
-        
+        # New format: flat JSON with all fields directly
         # Save analysis to database
         interview_analysis = InterviewAnalysis.objects.create(
             user=user,
             recording_filename=recording_file.name,
             recording_duration_seconds=0,  # Could extract from file metadata if needed
             
-            # Personal report
-            emotion_trend=personal_report.get('emotion_trend', ''),
-            confidence_score=personal_report.get('confidence_score', 0),
-            communication_analysis=personal_report.get('communication', ''),
-            strengths=personal_report.get('strengths', []),
-            improvements=personal_report.get('improvements', []),
+            # Map new fields to old model fields
+            emotion_trend=analysis_result.get('emotion_trend', ''),
+            confidence_score=analysis_result.get('confidence_score', 0),
+            communication_analysis=analysis_result.get('communication_analysis', ''),
+            strengths=analysis_result.get('strengths', []),
+            improvements=analysis_result.get('improvements', []),
             
             # Integrity analysis
-            eye_movement_pattern=integrity_analysis.get('eye_movement', ''),
-            attention_level=integrity_analysis.get('attention_level', ''),
-            suspicion_risk=integrity_analysis.get('suspicion_risk', ''),
-            integrity_notes=integrity_analysis.get('notes', ''),
+            eye_movement_pattern=analysis_result.get('eye_movement_pattern', ''),
+            attention_level=analysis_result.get('attention_level', ''),
+            suspicion_risk=analysis_result.get('suspicion_risk', ''),
+            integrity_notes=analysis_result.get('integrity_notes', ''),
             
             # Ranking
-            ranking_position=ranking.get('position', 1),
-            total_participants=ranking.get('total_participants', participant_count),
-            percentile_band=ranking.get('percentile', ''),
+            ranking_position=analysis_result.get('ranking_position', 1),
+            total_participants=analysis_result.get('total_participants', participant_count),
+            percentile_band=analysis_result.get('percentile_band', ''),
             
-            # Store raw response for debugging
+            # Store FULL raw response - this includes all the new detailed fields
             raw_ai_response=analysis_result
         )
         
+        # Return serialized data including raw_ai_response
         serializer = InterviewAnalysisSerializer(interview_analysis)
+        response_data = serializer.data
+        
+        # Merge raw_ai_response fields into the top level for easy frontend access
+        if interview_analysis.raw_ai_response:
+            response_data.update(interview_analysis.raw_ai_response)
         
         print(f"✅ Analysis saved with ID: {interview_analysis.id}")
         print(f"   Confidence: {interview_analysis.confidence_score}/100")

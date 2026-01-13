@@ -103,6 +103,9 @@ export default function InterviewResults() {
   }
 
   const calculateReadinessScore = (interview) => {
+    // Return default if interview is null/undefined
+    if (!interview) return 70
+    
     // Base score
     let score = 70
     
@@ -181,7 +184,10 @@ export default function InterviewResults() {
   }
 
   const generateNextRecommendation = (interview, score) => {
-    const config = interview.config || {}
+    // Handle null/undefined interview
+    if (!interview) return
+    
+    const config = interview?.config || {}
     
     if (score >= 85) {
       setNextRecommendation({
@@ -413,13 +419,7 @@ export default function InterviewResults() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-bold text-lg mb-2 text-gray-900">Emotional Trend</h3>
-                  <p className="font-comic text-gray-700 bg-white p-4 rounded-lg border-2 border-purple-300">
-                    {aiAnalysis.emotion_trend}
-                  </p>
-                </div>
-
+                {/* Confidence Score */}
                 <div>
                   <h3 className="font-bold text-lg mb-2 text-gray-900">Confidence Score</h3>
                   <div className="bg-white p-4 rounded-lg border-2 border-purple-300">
@@ -438,14 +438,148 @@ export default function InterviewResults() {
                   </div>
                 </div>
 
+                {/* Eye Contact */}
+                <div>
+                  <h3 className="font-bold text-lg mb-2 text-gray-900 flex items-center gap-2">
+                    <Eye className="w-5 h-5" />
+                    Eye Contact
+                  </h3>
+                  <div className="bg-white p-4 rounded-lg border-2 border-purple-300">
+                    <div className="text-3xl font-hand font-bold text-purple-600 mb-1">
+                      {aiAnalysis.eye_contact_percentage || 'N/A'}
+                    </div>
+                    <p className="text-sm font-comic text-gray-600">
+                      {aiAnalysis.gaze_behavior || aiAnalysis.eye_movement_pattern}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Emotional Trend */}
                 <div className="md:col-span-2">
-                  <h3 className="font-bold text-lg mb-2 text-gray-900">Communication Analysis</h3>
+                  <h3 className="font-bold text-lg mb-2 text-gray-900 flex items-center gap-2">
+                    <Smile className="w-5 h-5" />
+                    Emotional Progression
+                  </h3>
                   <p className="font-comic text-gray-700 bg-white p-4 rounded-lg border-2 border-purple-300">
-                    {aiAnalysis.communication_analysis}
+                    {aiAnalysis.emotion_trend}
                   </p>
                 </div>
+
+                {/* Speech Analysis */}
+                <div>
+                  <h3 className="font-bold text-lg mb-2 text-gray-900 flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5" />
+                    Speaking Pace
+                  </h3>
+                  <div className="bg-white p-4 rounded-lg border-2 border-purple-300 space-y-2">
+                    <p className="text-sm font-comic text-gray-700">
+                      {aiAnalysis.speaking_pace || aiAnalysis.communication_analysis}
+                    </p>
+                    {aiAnalysis.filler_words && (
+                      <p className="text-xs font-comic text-gray-600 border-t pt-2">
+                        📝 {aiAnalysis.filler_words}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Response Timing - Enhanced */}
+                <div>
+                  <h3 className="font-bold text-lg mb-2 text-gray-900 flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    Response Timing
+                  </h3>
+                  <div className="bg-white p-4 rounded-lg border-2 border-purple-300 space-y-2">
+                    {aiAnalysis.response_delay_average && (
+                      <div className="text-3xl font-hand font-bold text-purple-600">
+                        {aiAnalysis.response_delay_average}
+                      </div>
+                    )}
+                    <p className="text-sm font-comic text-gray-700">
+                      {aiAnalysis.response_timing || 'Moderate pace with thoughtful pauses'}
+                    </p>
+                    {aiAnalysis.response_delay_range && (
+                      <p className="text-xs text-gray-600 border-t pt-2">
+                        Range: {aiAnalysis.response_delay_range}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Speaking Pace - Enhanced */}
+                {aiAnalysis.speaking_pace_wpm && (
+                  <div>
+                    <h3 className="font-bold text-lg mb-2 text-gray-900 flex items-center gap-2">
+                      <Zap className="w-5 h-5" />
+                      Speaking Rate
+                    </h3>
+                    <div className="bg-white p-4 rounded-lg border-2 border-purple-300">
+                      <div className="text-3xl font-hand font-bold text-purple-600 mb-1">
+                        {aiAnalysis.speaking_pace_wpm}
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        Words per minute
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Head Movement */}
+                {aiAnalysis.head_movement && (
+                  <div className="md:col-span-2">
+                    <h3 className="font-bold text-lg mb-2 text-gray-900 flex items-center gap-2">
+                      <Activity className="w-5 h-5" />
+                      Body Language
+                    </h3>
+                    <p className="font-comic text-gray-700 bg-white p-4 rounded-lg border-2 border-purple-300">
+                      {aiAnalysis.head_movement}
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
+
+            {/* Detailed Eye Movement Breakdown */}
+            {aiAnalysis.eye_movement_breakdown && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.15 }}
+                className="card-sketch bg-gradient-to-br from-blue-50 to-cyan-50 p-8 mb-8 border-4 border-blue-500"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <Eye className="w-8 h-8 text-blue-600" />
+                  <h2 className="text-3xl font-hand font-bold text-gray-900">Eye Movement Analysis</h2>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-4 rounded-lg border-2 border-blue-300 text-center">
+                    <div className="text-4xl font-hand font-bold text-blue-600">
+                      {aiAnalysis.eye_movement_breakdown.direct_contact}
+                    </div>
+                    <div className="text-sm font-bold text-gray-600 mt-1">Direct Contact</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border-2 border-green-300 text-center">
+                    <div className="text-4xl font-hand font-bold text-green-600">
+                      {aiAnalysis.eye_movement_breakdown.thinking_away}
+                    </div>
+                    <div className="text-sm font-bold text-gray-600 mt-1">Thinking</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border-2 border-yellow-300 text-center">
+                    <div className="text-4xl font-hand font-bold text-yellow-600">
+                      {aiAnalysis.eye_movement_breakdown.reading_down}
+                    </div>
+                    <div className="text-sm font-bold text-gray-600 mt-1">Reading</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border-2 border-gray-300 text-center">
+                    <div className="text-4xl font-hand font-bold text-gray-600">
+                      {aiAnalysis.eye_movement_breakdown.distraction}
+                    </div>
+                    <div className="text-sm font-bold text-gray-600 mt-1">Distraction</div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Integrity & Behavioral Analysis */}
             <motion.div
@@ -458,6 +592,31 @@ export default function InterviewResults() {
                 <Shield className="w-8 h-8 text-orange-600" />
                 <h2 className="text-3xl font-hand font-bold text-gray-900">Behavioral Integrity Analysis</h2>
               </div>
+
+              {/* Risk Score Display */}
+              {aiAnalysis.cheating_risk_score !== undefined && (
+                <div className="bg-white p-6 rounded-lg border-2 border-orange-300 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-lg text-gray-900">Integrity Risk Score</h3>
+                    <div className="text-5xl font-hand font-bold text-orange-600">
+                      {aiAnalysis.cheating_risk_score}<span className="text-2xl text-gray-600">/100</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div
+                      className={`h-4 rounded-full transition-all duration-1000 ${
+                        aiAnalysis.cheating_risk_score < 25 ? 'bg-green-500' :
+                        aiAnalysis.cheating_risk_score < 50 ? 'bg-yellow-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${aiAnalysis.cheating_risk_score}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    0-25: Low Risk | 26-50: Moderate Risk | 51-100: High Risk
+                  </p>
+                </div>
+              )}
 
               <div className="bg-yellow-100 border-2 border-yellow-500 rounded-lg p-4 mb-6 flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-yellow-700 mt-1 flex-shrink-0" />
