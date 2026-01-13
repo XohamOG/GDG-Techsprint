@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Code, Palette, MessageCircle, StopCircle, Mic, MicOff, 
-  Video, Camera, Shield, Clock, Send, CheckCircle, AlertCircle, Brain
+  Video, Camera, Shield, Clock, Send, CheckCircle, AlertCircle, Brain,
   Volume2, VolumeX, Mic as MicIcon
 } from 'lucide-react'
 import CodeEditor from '../components/CodeEditor'
@@ -670,7 +670,7 @@ export default function InterviewScreen() {
     setUserInput('')
   }
 
-  const handleEndInterview = () => {
+  const handleEndInterview = async () => {
     // Stop all speech IMMEDIATELY
     if (currentUtteranceRef.current) {
       currentUtteranceRef.current.onend = null // Prevent callbacks
