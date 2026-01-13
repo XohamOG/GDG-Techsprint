@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+import re
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -132,17 +133,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS Configuration
 CORS_ALLOW_CREDENTIALS = True
+
+# Allow specific origins
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://gdg-techsprint-nine.vercel.app",  # Add your Vercel domain
-    "https://gdg-techsprint.onrender.com",       # Add custom domain if you have one
+    "http://localhost:5173",  # Vite dev server
+    "https://gdg-techsprint-nine.vercel.app",
+    "https://gdg-techsprint.onrender.com",
 ]
 
-# Or allow all Vercel domains (less secure):
-# CORS_ALLOWED_ORIGIN_REGEXES = [
-#     r"^https://.*\.vercel\.app$",
-# ]
+# Also allow ALL Vercel preview deployments (*.vercel.app)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -188,6 +192,12 @@ SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'  # 'None' for cross-ori
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False  # JavaScript needs to read this
 CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://gdg-techsprint-nine.vercel.app",
+    "https://*.vercel.app",
+    "https://gdg-techsprint.onrender.com",
+]
 
 # Trust proxy headers (important for Render)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
