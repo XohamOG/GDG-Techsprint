@@ -15,4 +15,9 @@ urlpatterns = [
     path('interview/ai/analyze/', interview_views.analyze_response, name='ai_analyze_response'),
     path('interview/ai/transition/', interview_views.transition_round, name='ai_transition_round'),
     path('interview/ai/conclude/', interview_views.conclude_interview, name='ai_conclude_interview'),
+    
+    # Interview Analysis endpoints (POST-interview recording analysis)
+    path('interview/ai/recording/analyze/', views.analyze_interview, name='analyze_interview_recording'),
+    path('interview/ai/analysis/<int:analysis_id>/', views.get_interview_analysis, name='get_interview_analysis'),
+    path('interview/ai/analyses/', views.get_user_interview_analyses, name='get_user_interview_analyses'),
 ]
