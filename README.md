@@ -207,7 +207,7 @@ Enterprise features for recruitment teams:
 
 ---
 
-## � Competitive Advantage
+## 🆚 Competitive Advantage
 
 ### How We Stand Out from Existing Solutions
 
@@ -315,7 +315,11 @@ Our platform follows a modern, scalable microservices architecture:
 
 ## 🔄 User Flow
 
+<div align="center">
+
 ![User Flow Diagram](pics/usecase.png)
+
+</div>
 
 ### **B2C Flow** (Candidate Journey):
 
@@ -365,7 +369,11 @@ Our platform follows a modern, scalable microservices architecture:
 
 2. **Candidate Invitation**
    🌐 Google Technologies Used
+<div align="center">
 
+![Google Technologies Stack](pics/google_technologies.png)
+
+</div>
 Our platform is built entirely on **Google's cutting-edge technologies**, showcasing the power of Google Cloud and AI ecosystem:
 
 ### **Frontend Layer** 🎨
